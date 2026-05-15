@@ -1,25 +1,35 @@
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+} from './auth/constants/auth.constants';
 
 const DEFAULT_PORT = 3001;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(cookieParser());
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
-  app.enableCors();
+  app.enableCors({ credentials: true });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('ContractHero API')
     .setVersion('1.0')
+    .addCookieAuth(ACCESS_TOKEN_COOKIE)
+    .addCookieAuth(REFRESH_TOKEN_COOKIE)
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
