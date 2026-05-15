@@ -10,11 +10,13 @@ import {
   MinLength,
 } from 'class-validator';
 import {
+  BCRYPT_MAX_PASSWORD_BYTES,
   MAX_EMAIL_LENGTH,
   MAX_NAME_LENGTH,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
 } from '../constants';
+import { MaxByteLength } from '../validators/max-byte-length.validator';
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
 
@@ -27,13 +29,14 @@ export class RegisterDto {
   @ApiProperty({
     example: 'StrongPass123',
     description:
-      'Password must contain at least one uppercase, one lowercase, and one digit.',
+      'Password must contain at least one uppercase letter, one lowercase letter, and one digit. Maximum length is enforced in UTF-8 bytes (bcrypt input cap).',
     minLength: MIN_PASSWORD_LENGTH,
     maxLength: MAX_PASSWORD_LENGTH,
   })
   @IsString()
   @MinLength(MIN_PASSWORD_LENGTH)
   @MaxLength(MAX_PASSWORD_LENGTH)
+  @MaxByteLength(BCRYPT_MAX_PASSWORD_BYTES)
   @Matches(PASSWORD_PATTERN, {
     message:
       'password must contain at least one uppercase letter, one lowercase letter, and one digit',

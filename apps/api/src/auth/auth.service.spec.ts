@@ -1,4 +1,8 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -6,6 +10,7 @@ import { Locale, Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import { BCRYPT_MAX_PASSWORD_BYTES } from './constants';
 import {
   TOKEN_TYPE_ACCESS,
   TOKEN_TYPE_REFRESH,
@@ -152,6 +157,57 @@ describe('AuthService', () => {
         }),
       ).rejects.toThrow('db down');
     });
+
+    it('rejects passwords whose UTF-8 byte length exceeds the bcrypt 72-byte cap (defense-in-depth)', async () => {
+      // 'A'.repeat(73) → 73 bytes ASCII; passes any UTF-16 length check but is over bcrypt's cap.
+      const overSized = 'A'.repeat(BCRYPT_MAX_PASSWORD_BYTES + 1);
+
+      await expect(
+        service.register({
+          email: 'jane@example.com',
+          password: overSized,
+          name: 'Jane',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(mockedBcrypt.hash).not.toHaveBeenCalled();
+      expect(usersService.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects multi-byte passwords whose UTF-8 byte length exceeds the bcrypt cap', async () => {
+      // 25 × '€' (3 bytes each) = 75 bytes, only 25 code units → would slip past a char-count guard.
+      const overSized = '€'.repeat(25);
+      expect(Buffer.byteLength(overSized, 'utf8')).toBeGreaterThan(
+        BCRYPT_MAX_PASSWORD_BYTES,
+      );
+
+      await expect(
+        service.register({
+          email: 'jane@example.com',
+          password: overSized,
+          name: 'Jane',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(mockedBcrypt.hash).not.toHaveBeenCalled();
+    });
+
+    it('accepts passwords exactly at the bcrypt byte limit', async () => {
+      mockedBcrypt.hash.mockResolvedValue('hashed-password' as never);
+      usersService.create.mockResolvedValue(buildUser());
+      const exact = 'Aa1' + 'b'.repeat(BCRYPT_MAX_PASSWORD_BYTES - 3);
+      expect(Buffer.byteLength(exact, 'utf8')).toBe(BCRYPT_MAX_PASSWORD_BYTES);
+
+      await expect(
+        service.register({
+          email: 'jane@example.com',
+          password: exact,
+          name: 'Jane',
+        }),
+      ).resolves.toBeDefined();
+
+      expect(mockedBcrypt.hash).toHaveBeenCalledWith(exact, expect.any(Number));
+    });
   });
 
   describe('login', () => {
@@ -187,6 +243,19 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: 'jane@example.com', password: 'WrongPass1' }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('rejects oversized passwords with generic Unauthorized (no DB call, no bcrypt.compare)', async () => {
+      // Prevents two passwords sharing the same 72-byte prefix from authenticating
+      // against the same account due to bcrypt's silent truncation.
+      const overSized = 'A'.repeat(BCRYPT_MAX_PASSWORD_BYTES + 1);
+
+      await expect(
+        service.login({ email: 'jane@example.com', password: overSized }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+
+      expect(usersService.findByEmail).not.toHaveBeenCalled();
+      expect(mockedBcrypt.compare).not.toHaveBeenCalled();
     });
   });
 
