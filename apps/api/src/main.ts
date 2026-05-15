@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
@@ -7,6 +7,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
 } from './auth/constants/auth.constants';
+import { buildCorsOptions } from './config/cors.config';
 
 const DEFAULT_PORT = 3001;
 
@@ -23,7 +24,9 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors({ credentials: true });
+  // Explicit allow-list + credentials. Browsers reject `Access-Control-Allow-Origin: *`
+  // when `credentials: true`, so we must enumerate origins via CORS_ORIGINS.
+  app.enableCors(buildCorsOptions(process.env, new Logger('Cors')));
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('ContractHero API')
