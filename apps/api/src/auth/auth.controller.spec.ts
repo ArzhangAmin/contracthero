@@ -1,17 +1,28 @@
+import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Locale } from '@prisma/client';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { AUTH_COOKIE_NAME } from './constants';
-import { AuthenticatedUser } from './types/auth.types';
+import { AuthOutcome, AuthService } from './auth.service';
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+} from './constants/auth.constants';
+import { AuthUserDto } from './dto/auth-user.dto';
 
-const buildAuthUser = (): AuthenticatedUser => ({
+const buildAuthUser = (): AuthUserDto => ({
   id: 'user-1',
   email: 'jane@example.com',
   name: 'Jane',
   locale: Locale.DE,
+  createdAt: new Date('2024-01-01T00:00:00Z'),
+});
+
+const buildOutcome = (): AuthOutcome => ({
+  user: buildAuthUser(),
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
 });
 
 interface ResponseMock {
@@ -33,6 +44,7 @@ describe('AuthController', () => {
     const authMock: Partial<jest.Mocked<AuthService>> = {
       register: jest.fn(),
       login: jest.fn(),
+      refresh: jest.fn(),
     };
     const configMock: Partial<jest.Mocked<ConfigService>> = {
       get: jest.fn(),
@@ -52,40 +64,43 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    it('sets the auth cookie and returns the user', async () => {
-      const user = buildAuthUser();
-      authService.register.mockResolvedValue({ user, accessToken: 'jwt-token' });
+    it('sets access + refresh cookies and returns the user (dev cookies)', async () => {
+      authService.register.mockResolvedValue(buildOutcome());
       configService.get.mockReturnValue('development');
       const res = buildResponse();
 
       const result = await controller.register(
-        {
-          email: 'jane@example.com',
-          password: 'StrongPass123',
-          name: 'Jane',
-        },
+        { email: 'jane@example.com', password: 'StrongPass123', name: 'Jane' },
         res as unknown as Response,
       );
 
-      expect(authService.register).toHaveBeenCalled();
       expect(res.cookie).toHaveBeenCalledWith(
-        AUTH_COOKIE_NAME,
-        'jwt-token',
+        ACCESS_TOKEN_COOKIE,
+        'access-token',
         expect.objectContaining({
           httpOnly: true,
           secure: false,
           sameSite: 'lax',
           path: '/',
+          maxAge: expect.any(Number),
         }),
       );
-      expect(result).toEqual({ user });
+      expect(res.cookie).toHaveBeenCalledWith(
+        REFRESH_TOKEN_COOKIE,
+        'refresh-token',
+        expect.objectContaining({
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: expect.any(Number),
+        }),
+      );
+      expect(result.user.email).toBe('jane@example.com');
     });
 
-    it('uses secure + strict cookie in production', async () => {
-      authService.register.mockResolvedValue({
-        user: buildAuthUser(),
-        accessToken: 'jwt-token',
-      });
+    it('uses secure + strict cookies in production', async () => {
+      authService.register.mockResolvedValue(buildOutcome());
       configService.get.mockReturnValue('production');
       const res = buildResponse();
 
@@ -95,17 +110,16 @@ describe('AuthController', () => {
       );
 
       expect(res.cookie).toHaveBeenCalledWith(
-        AUTH_COOKIE_NAME,
-        'jwt-token',
+        ACCESS_TOKEN_COOKIE,
+        'access-token',
         expect.objectContaining({ secure: true, sameSite: 'strict' }),
       );
     });
   });
 
   describe('login', () => {
-    it('sets the auth cookie and returns the user', async () => {
-      const user = buildAuthUser();
-      authService.login.mockResolvedValue({ user, accessToken: 'jwt-token' });
+    it('sets cookies and returns the user', async () => {
+      authService.login.mockResolvedValue(buildOutcome());
       configService.get.mockReturnValue('development');
       const res = buildResponse();
 
@@ -114,25 +128,50 @@ describe('AuthController', () => {
         res as unknown as Response,
       );
 
-      expect(authService.login).toHaveBeenCalled();
-      expect(res.cookie).toHaveBeenCalledWith(
-        AUTH_COOKIE_NAME,
-        'jwt-token',
-        expect.any(Object),
-      );
-      expect(result).toEqual({ user });
+      expect(res.cookie).toHaveBeenCalledTimes(2);
+      expect(result.user.email).toBe('jane@example.com');
+    });
+  });
+
+  describe('refresh', () => {
+    it('throws when refresh cookie is missing', async () => {
+      const req = { cookies: {} } as unknown as Request;
+      const res = buildResponse();
+
+      await expect(
+        controller.refresh(req, res as unknown as Response),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('delegates to AuthService.refresh and sets new cookies', async () => {
+      authService.refresh.mockResolvedValue(buildOutcome());
+      configService.get.mockReturnValue('development');
+      const req = {
+        cookies: { [REFRESH_TOKEN_COOKIE]: 'some-refresh-token' },
+      } as unknown as Request;
+      const res = buildResponse();
+
+      const result = await controller.refresh(req, res as unknown as Response);
+
+      expect(authService.refresh).toHaveBeenCalledWith('some-refresh-token');
+      expect(res.cookie).toHaveBeenCalledTimes(2);
+      expect(result.user.email).toBe('jane@example.com');
     });
   });
 
   describe('logout', () => {
-    it('clears the auth cookie', () => {
+    it('clears both auth cookies', () => {
       configService.get.mockReturnValue('development');
       const res = buildResponse();
 
       controller.logout(res as unknown as Response);
 
       expect(res.clearCookie).toHaveBeenCalledWith(
-        AUTH_COOKIE_NAME,
+        ACCESS_TOKEN_COOKIE,
+        expect.objectContaining({ httpOnly: true, path: '/' }),
+      );
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        REFRESH_TOKEN_COOKIE,
         expect.objectContaining({ httpOnly: true, path: '/' }),
       );
     });

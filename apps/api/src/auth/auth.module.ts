@@ -5,7 +5,6 @@ import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { DEFAULT_JWT_EXPIRES_IN } from './constants';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -20,12 +19,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         if (!secret) {
           throw new Error('JWT_SECRET is not configured');
         }
-        const expiresIn =
-          configService.get<string>('JWT_EXPIRES_IN') ?? DEFAULT_JWT_EXPIRES_IN;
-        return {
-          secret,
-          signOptions: { expiresIn },
-        };
+        return { secret };
       },
     }),
   ],

@@ -3,20 +3,32 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { BCRYPT_SALT_ROUNDS } from './constants';
+import {
+  BCRYPT_SALT_ROUNDS,
+  DEFAULT_ACCESS_EXPIRES_IN,
+  DEFAULT_REFRESH_EXPIRES_IN,
+  TOKEN_TYPE_ACCESS,
+  TOKEN_TYPE_REFRESH,
+} from './constants/auth.constants';
+import { AuthUserDto } from './dto/auth-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { AuthenticatedUser, JwtPayload } from './types/auth.types';
+import { JwtPayload } from './types/jwt-payload.type';
 
 const PRISMA_UNIQUE_CONSTRAINT_ERROR = 'P2002';
 
-export interface AuthOutcome {
-  user: AuthenticatedUser;
+export interface TokenPair {
   accessToken: string;
+  refreshToken: string;
+}
+
+export interface AuthOutcome extends TokenPair {
+  user: AuthUserDto;
 }
 
 @Injectable()
@@ -24,6 +36,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthOutcome> {
@@ -47,8 +60,8 @@ export class AuthService {
       throw error;
     }
 
-    const accessToken = await this.signToken(user);
-    return { user: this.toAuthenticatedUser(user), accessToken };
+    const tokens = await this.issueTokens(user);
+    return { user: this.toAuthUserDto(user), ...tokens };
   }
 
   async login(dto: LoginDto): Promise<AuthOutcome> {
@@ -62,29 +75,72 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessToken = await this.signToken(user);
-    return { user: this.toAuthenticatedUser(user), accessToken };
+    const tokens = await this.issueTokens(user);
+    return { user: this.toAuthUserDto(user), ...tokens };
   }
 
-  async validateUserById(userId: string): Promise<AuthenticatedUser> {
-    const user = await this.usersService.findById(userId);
+  async refresh(refreshToken: string): Promise<AuthOutcome> {
+    let payload: JwtPayload;
+    try {
+      payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (payload.typ !== TOKEN_TYPE_REFRESH) {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    const user = await this.usersService.findById(payload.sub);
     if (!user) {
       throw new UnauthorizedException('User no longer exists');
     }
-    return this.toAuthenticatedUser(user);
+
+    const tokens = await this.issueTokens(user);
+    return { user: this.toAuthUserDto(user), ...tokens };
   }
 
-  private async signToken(user: User): Promise<string> {
-    const payload: JwtPayload = { sub: user.id, email: user.email };
-    return this.jwtService.signAsync(payload);
+  async validateAccessUser(payload: JwtPayload): Promise<AuthUserDto> {
+    if (payload.typ !== TOKEN_TYPE_ACCESS) {
+      throw new UnauthorizedException('Invalid token type');
+    }
+    const user = await this.usersService.findById(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('User no longer exists');
+    }
+    return this.toAuthUserDto(user);
   }
 
-  private toAuthenticatedUser(user: User): AuthenticatedUser {
+  private async issueTokens(user: User): Promise<TokenPair> {
+    const accessExpiresIn =
+      this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') ??
+      DEFAULT_ACCESS_EXPIRES_IN;
+    const refreshExpiresIn =
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ??
+      this.configService.get<string>('JWT_EXPIRES_IN') ??
+      DEFAULT_REFRESH_EXPIRES_IN;
+
+    const basePayload = { sub: user.id, email: user.email };
+
+    const accessToken = await this.jwtService.signAsync(
+      { ...basePayload, typ: TOKEN_TYPE_ACCESS },
+      { expiresIn: accessExpiresIn },
+    );
+    const refreshToken = await this.jwtService.signAsync(
+      { ...basePayload, typ: TOKEN_TYPE_REFRESH },
+      { expiresIn: refreshExpiresIn },
+    );
+
+    return { accessToken, refreshToken };
+  }
+
+  private toAuthUserDto(user: User): AuthUserDto {
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       locale: user.locale,
+      createdAt: user.createdAt,
     };
   }
 }

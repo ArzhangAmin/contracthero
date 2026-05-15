@@ -1,10 +1,16 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Locale, Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import {
+  TOKEN_TYPE_ACCESS,
+  TOKEN_TYPE_REFRESH,
+} from './constants/auth.constants';
+import { JwtPayload } from './types/jwt-payload.type';
 
 jest.mock('bcrypt');
 
@@ -25,6 +31,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let usersService: jest.Mocked<UsersService>;
   let jwtService: jest.Mocked<JwtService>;
+  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     const usersMock: Partial<jest.Mocked<UsersService>> = {
@@ -33,7 +40,11 @@ describe('AuthService', () => {
       create: jest.fn(),
     };
     const jwtMock: Partial<jest.Mocked<JwtService>> = {
-      signAsync: jest.fn().mockResolvedValue('signed-jwt'),
+      signAsync: jest.fn(),
+      verifyAsync: jest.fn(),
+    };
+    const configMock: Partial<jest.Mocked<ConfigService>> = {
+      get: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -41,12 +52,23 @@ describe('AuthService', () => {
         AuthService,
         { provide: UsersService, useValue: usersMock },
         { provide: JwtService, useValue: jwtMock },
+        { provide: ConfigService, useValue: configMock },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     usersService = module.get(UsersService);
     jwtService = module.get(JwtService);
+    configService = module.get(ConfigService);
+
+    // Default: no env overrides
+    configService.get.mockReturnValue(undefined);
+
+    // signAsync returns a token tagged by typ for verification in assertions
+    jwtService.signAsync.mockImplementation(async (payload: object) => {
+      const p = payload as { typ: string };
+      return p.typ === TOKEN_TYPE_ACCESS ? 'access-token' : 'refresh-token';
+    });
   });
 
   afterEach(() => {
@@ -54,7 +76,7 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('hashes the password, creates the user and returns a token', async () => {
+    it('hashes password, creates user, and issues an access + refresh token pair', async () => {
       mockedBcrypt.hash.mockResolvedValue('hashed-password' as never);
       const user = buildUser();
       usersService.create.mockResolvedValue(user);
@@ -72,12 +94,28 @@ describe('AuthService', () => {
         name: 'Jane',
         locale: undefined,
       });
-      expect(jwtService.signAsync).toHaveBeenCalledWith({
-        sub: 'user-1',
-        email: 'jane@example.com',
-      });
-      expect(result.accessToken).toBe('signed-jwt');
-      expect(result.user).toEqual({
+      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
+      expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          sub: 'user-1',
+          email: 'jane@example.com',
+          typ: TOKEN_TYPE_ACCESS,
+        }),
+        expect.objectContaining({ expiresIn: expect.any(String) }),
+      );
+      expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          sub: 'user-1',
+          email: 'jane@example.com',
+          typ: TOKEN_TYPE_REFRESH,
+        }),
+        expect.objectContaining({ expiresIn: expect.any(String) }),
+      );
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
+      expect(result.user).toMatchObject({
         id: 'user-1',
         email: 'jane@example.com',
         name: 'Jane',
@@ -117,7 +155,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('returns a token when credentials are valid', async () => {
+    it('returns a token pair when credentials are valid', async () => {
       const user = buildUser();
       usersService.findByEmail.mockResolvedValue(user);
       mockedBcrypt.compare.mockResolvedValue(true as never);
@@ -129,8 +167,8 @@ describe('AuthService', () => {
 
       expect(usersService.findByEmail).toHaveBeenCalledWith('jane@example.com');
       expect(mockedBcrypt.compare).toHaveBeenCalledWith('StrongPass123', 'hashed-password');
-      expect(result.accessToken).toBe('signed-jwt');
-      expect(result.user.email).toBe('jane@example.com');
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
     });
 
     it('throws UnauthorizedException when the user does not exist', async () => {
@@ -152,13 +190,68 @@ describe('AuthService', () => {
     });
   });
 
-  describe('validateUserById', () => {
-    it('returns the authenticated user shape when found', async () => {
+  describe('refresh', () => {
+    it('issues a new token pair when refresh token is valid', async () => {
+      const payload: JwtPayload = {
+        sub: 'user-1',
+        email: 'jane@example.com',
+        typ: TOKEN_TYPE_REFRESH,
+      };
+      jwtService.verifyAsync.mockResolvedValue(payload);
       usersService.findById.mockResolvedValue(buildUser());
 
-      const result = await service.validateUserById('user-1');
+      const result = await service.refresh('valid-refresh-token');
 
-      expect(result).toEqual({
+      expect(jwtService.verifyAsync).toHaveBeenCalledWith('valid-refresh-token');
+      expect(result.accessToken).toBe('access-token');
+      expect(result.refreshToken).toBe('refresh-token');
+    });
+
+    it('rejects an access token used at /refresh', async () => {
+      jwtService.verifyAsync.mockResolvedValue({
+        sub: 'user-1',
+        email: 'jane@example.com',
+        typ: TOKEN_TYPE_ACCESS,
+      });
+
+      await expect(service.refresh('access-as-refresh')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+
+    it('rejects an invalid/expired refresh token', async () => {
+      jwtService.verifyAsync.mockRejectedValue(new Error('expired'));
+
+      await expect(service.refresh('bad-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+
+    it('rejects when the user no longer exists', async () => {
+      jwtService.verifyAsync.mockResolvedValue({
+        sub: 'user-1',
+        email: 'jane@example.com',
+        typ: TOKEN_TYPE_REFRESH,
+      });
+      usersService.findById.mockResolvedValue(null);
+
+      await expect(service.refresh('valid-refresh-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  describe('validateAccessUser', () => {
+    it('returns the auth user dto for a valid access payload', async () => {
+      usersService.findById.mockResolvedValue(buildUser());
+
+      const result = await service.validateAccessUser({
+        sub: 'user-1',
+        email: 'jane@example.com',
+        typ: TOKEN_TYPE_ACCESS,
+      });
+
+      expect(result).toMatchObject({
         id: 'user-1',
         email: 'jane@example.com',
         name: 'Jane',
@@ -166,12 +259,26 @@ describe('AuthService', () => {
       });
     });
 
-    it('throws UnauthorizedException when user is missing', async () => {
+    it('rejects refresh tokens used as access tokens', async () => {
+      await expect(
+        service.validateAccessUser({
+          sub: 'user-1',
+          email: 'jane@example.com',
+          typ: TOKEN_TYPE_REFRESH,
+        }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('rejects when the user no longer exists', async () => {
       usersService.findById.mockResolvedValue(null);
 
-      await expect(service.validateUserById('user-1')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateAccessUser({
+          sub: 'user-1',
+          email: 'jane@example.com',
+          typ: TOKEN_TYPE_ACCESS,
+        }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
 });
