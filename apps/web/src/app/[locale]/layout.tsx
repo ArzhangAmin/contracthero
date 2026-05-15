@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { getLocaleDirection, isValidLocale } from '@/i18n/locale-utils';
+import '@contracthero/ui/styles';
 
 export const metadata: Metadata = {
   title: 'ContractHero',
@@ -25,7 +26,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <html lang={locale} dir={getLocaleDirection(locale)}>
-      <body>
+      <body className="font-vazirmatn">
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
