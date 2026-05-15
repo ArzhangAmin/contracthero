@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Locale {
+  DE
+  EN
+  FA
+}
+
+enum ContractCategory {
+  RENT
+  INSURANCE
+  GYM
+  MOBILE
+  INTERNET
+  UTILITIES
+  OTHER
+}
+
+enum ReminderType {
+  DAYS_30
+  DAYS_7
+  DAYS_1
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  locale       Locale     @default(DE)
+  contracts    Contract[]
+  files        File[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Contract {
+  id               String             @id @default(cuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id])
+  title            String
+  category         ContractCategory
+  counterparty     String
+  startDate        DateTime
+  endDate          DateTime
+  noticePeriodDays Int?
+  autoRenew        Boolean            @default(false)
+  notes            String?
+  filePath         String?
+  reminders        ContractReminder[]
+  files            File[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model ContractReminder {
+  id           String       @id @default(cuid())
+  contractId   String
+  contract     Contract     @relation(fields: [contractId], references: [id])
+  type         ReminderType
+  scheduledFor DateTime
+  sentAt       DateTime?
+  createdAt    DateTime     @default(now())
+}
+
+model File {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  contractId String?
+  contract   Contract? @relation(fields: [contractId], references: [id])
+  filename   String
+  mimetype   String
+  size       Int
+  path       String
+  createdAt  DateTime  @default(now())
+}
