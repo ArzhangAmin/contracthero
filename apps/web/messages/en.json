@@ -1,1 +1,35 @@
-{ "common": { "appName": "ContractHero", "tagline": "Your contracts under control" } }
+{
+  "common": {
+    "appName": "ContractHero",
+    "tagline": "Your contracts under control"
+  },
+  "auth": {
+    "common": {
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "nameLabel": "Full name",
+      "submitting": "Please wait…"
+    },
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to manage your contracts.",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Create one"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Start tracking your contracts in minutes.",
+      "submit": "Create account",
+      "passwordHint": "Use at least 8 characters with upper, lower, and a digit.",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid email or password.",
+      "emailTaken": "An account with this email already exists.",
+      "invalidInput": "Please check the form and try again.",
+      "generic": "Something went wrong. Please try again."
+    }
+  }
+}

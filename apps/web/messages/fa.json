@@ -1,1 +1,35 @@
-{ "common": { "appName": "ContractHero", "tagline": "قراردادهاتو مدیریت کن" } }
+{
+  "common": {
+    "appName": "ContractHero",
+    "tagline": "قراردادهاتو مدیریت کن"
+  },
+  "auth": {
+    "common": {
+      "emailLabel": "ایمیل",
+      "passwordLabel": "رمز عبور",
+      "nameLabel": "نام و نام خانوادگی",
+      "submitting": "لطفاً صبر کنید…"
+    },
+    "login": {
+      "title": "خوش آمدید",
+      "subtitle": "برای مدیریت قراردادهات وارد شو.",
+      "submit": "ورود",
+      "noAccount": "حساب کاربری نداری؟",
+      "registerLink": "ثبت‌نام کن"
+    },
+    "register": {
+      "title": "ساخت حساب کاربری",
+      "subtitle": "در چند دقیقه مدیریت قراردادهات رو شروع کن.",
+      "submit": "ساخت حساب",
+      "passwordHint": "حداقل ۸ کاراکتر شامل حرف بزرگ، حرف کوچک و یک عدد.",
+      "haveAccount": "از قبل حساب داری؟",
+      "loginLink": "وارد شو"
+    },
+    "errors": {
+      "invalidCredentials": "ایمیل یا رمز عبور اشتباه است.",
+      "emailTaken": "حسابی با این ایمیل از قبل وجود دارد.",
+      "invalidInput": "لطفاً فرم را بررسی کن و دوباره تلاش کن.",
+      "generic": "خطایی رخ داد. لطفاً دوباره تلاش کن."
+    }
+  }
+}
