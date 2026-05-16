@@ -30,11 +30,11 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-function renderForm(api: AuthApi): void {
+function renderForm(api: AuthApi, redirectTo?: string): void {
   render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
       <AuthProvider authApi={api} skipInitialFetch>
-        <LoginForm locale="en" />
+        <LoginForm locale="en" redirectTo={redirectTo} />
       </AuthProvider>
     </NextIntlClientProvider>,
   );
@@ -48,6 +48,18 @@ function buildApi(overrides: Partial<AuthApi> = {}): AuthApi {
     me: vi.fn(),
     ...overrides,
   } as AuthApi;
+}
+
+async function submitWith(email: string, password: string): Promise<void> {
+  fireEvent.change(screen.getByLabelText(enMessages.auth.common.emailLabel), {
+    target: { value: email },
+  });
+  fireEvent.change(screen.getByLabelText(enMessages.auth.common.passwordLabel), {
+    target: { value: password },
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: enMessages.auth.login.submit }));
+  });
 }
 
 describe('LoginForm', () => {
@@ -64,16 +76,7 @@ describe('LoginForm', () => {
     const login = vi.fn().mockResolvedValue(USER);
     renderForm(buildApi({ login }));
 
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.emailLabel), {
-      target: { value: USER.email },
-    });
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.passwordLabel), {
-      target: { value: 'StrongPass1' },
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: enMessages.auth.login.submit }));
-    });
+    await submitWith(USER.email, 'StrongPass1');
 
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith({ email: USER.email, password: 'StrongPass1' });
@@ -82,20 +85,48 @@ describe('LoginForm', () => {
     expect(refreshMock).toHaveBeenCalled();
   });
 
+  it('safe redirectTo prop ro respect mikone', async () => {
+    pushMock.mockClear();
+    const login = vi.fn().mockResolvedValue(USER);
+    renderForm(buildApi({ login }), '/en/dashboard?tab=upcoming');
+
+    await submitWith(USER.email, 'StrongPass1');
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/en/dashboard?tab=upcoming');
+    });
+  });
+
+  it('unsafe redirectTo (cross-origin) ro reject mikone va be /<locale>/ fallback mide', async () => {
+    pushMock.mockClear();
+    const login = vi.fn().mockResolvedValue(USER);
+    renderForm(buildApi({ login }), 'https://evil.example/phish');
+
+    await submitWith(USER.email, 'StrongPass1');
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/en/');
+    });
+    expect(pushMock).not.toHaveBeenCalledWith(expect.stringContaining('evil.example'));
+  });
+
+  it('protocol-relative redirectTo (`//evil`) ro reject mikone', async () => {
+    pushMock.mockClear();
+    const login = vi.fn().mockResolvedValue(USER);
+    renderForm(buildApi({ login }), '//evil.example/phish');
+
+    await submitWith(USER.email, 'StrongPass1');
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/en/');
+    });
+  });
+
   it('401 ro be invalidCredentials message map mikone', async () => {
     const login = vi.fn().mockRejectedValue(new ApiError(401, 'Unauthorized', null));
     renderForm(buildApi({ login }));
 
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.emailLabel), {
-      target: { value: 'a@b.com' },
-    });
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.passwordLabel), {
-      target: { value: 'xxx' },
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: enMessages.auth.login.submit }));
-    });
+    await submitWith('a@b.com', 'xxx');
 
     await waitFor(() => {
       const alerts = screen.getAllByRole('alert');
@@ -109,16 +140,7 @@ describe('LoginForm', () => {
     const login = vi.fn().mockRejectedValue(new Error('network'));
     renderForm(buildApi({ login }));
 
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.emailLabel), {
-      target: { value: 'a@b.com' },
-    });
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.passwordLabel), {
-      target: { value: 'xxx' },
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: enMessages.auth.login.submit }));
-    });
+    await submitWith('a@b.com', 'xxx');
 
     await waitFor(() => {
       const alerts = screen.getAllByRole('alert');

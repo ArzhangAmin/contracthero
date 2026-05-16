@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties, type FormEvent, type ReactElement } from 'react';
+import { useMemo, useState, type CSSProperties, type FormEvent, type ReactElement } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button, Input } from '@contracthero/ui';
@@ -11,6 +11,7 @@ import {
   POST_AUTH_REDIRECT_PATH,
   toApiLocale,
 } from '../../lib/auth/constants';
+import { resolveRedirectTarget } from '../../lib/auth/safe-redirect';
 import type { Locale } from '../../i18n/locale-utils';
 
 const HTTP_STATUS_CONFLICT = 409;
@@ -18,7 +19,13 @@ const HTTP_STATUS_BAD_REQUEST = 400;
 
 export interface RegisterFormProps {
   locale: Locale;
-  /** Optional path to redirect to after a successful registration. */
+  /**
+   * Optional path to redirect to after a successful registration.
+   *
+   * The value is re-validated by {@link resolveRedirectTarget} before being
+   * passed to the router, so callers cannot accidentally introduce an
+   * open-redirect even if they pass through untrusted input.
+   */
   redirectTo?: string;
 }
 
@@ -62,7 +69,13 @@ export function RegisterForm({ locale, redirectTo }: RegisterFormProps): ReactEl
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const target = redirectTo ?? `/${locale}${POST_AUTH_REDIRECT_PATH}`;
+  // Defence-in-depth: re-validate the redirect target so an unsafe value
+  // (e.g. passed by a caller that forgot to sanitise) can never reach the
+  // router as an open-redirect.
+  const target = useMemo(
+    () => resolveRedirectTarget(redirectTo, locale, POST_AUTH_REDIRECT_PATH),
+    [redirectTo, locale],
+  );
   const loginHref = `/${locale}${LOGIN_PATH}`;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
