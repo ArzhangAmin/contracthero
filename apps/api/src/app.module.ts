@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { DatabaseModule } from './database/database.module';
+import { DeadlineEngineModule } from './deadline-engine/deadline-engine.module';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 
@@ -16,6 +17,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AuthModule,
     ContractsModule,
+    DeadlineEngineModule,
   ],
   controllers: [AppController],
   providers: [AppService],
