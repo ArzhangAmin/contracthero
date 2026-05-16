@@ -1,1 +1,35 @@
-{ "common": { "appName": "ContractHero", "tagline": "Deine Vertraege im Griff" } }
+{
+  "common": {
+    "appName": "ContractHero",
+    "tagline": "Deine Vertraege im Griff"
+  },
+  "auth": {
+    "common": {
+      "emailLabel": "E-Mail",
+      "passwordLabel": "Passwort",
+      "nameLabel": "Vollstaendiger Name",
+      "submitting": "Bitte warten…"
+    },
+    "login": {
+      "title": "Willkommen zurueck",
+      "subtitle": "Melde dich an, um deine Vertraege zu verwalten.",
+      "submit": "Anmelden",
+      "noAccount": "Noch kein Konto?",
+      "registerLink": "Jetzt erstellen"
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "Beginne in wenigen Minuten mit der Verwaltung deiner Vertraege.",
+      "submit": "Konto erstellen",
+      "passwordHint": "Mindestens 8 Zeichen mit Gross-, Kleinbuchstaben und einer Ziffer.",
+      "haveAccount": "Schon ein Konto?",
+      "loginLink": "Anmelden"
+    },
+    "errors": {
+      "invalidCredentials": "Ungueltige E-Mail oder Passwort.",
+      "emailTaken": "Ein Konto mit dieser E-Mail existiert bereits.",
+      "invalidInput": "Bitte ueberpruefe das Formular und versuche es erneut.",
+      "generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    }
+  }
+}
