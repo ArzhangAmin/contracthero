@@ -1,19 +1,26 @@
 'use client';
 
-import { useState, type CSSProperties, type FormEvent, type ReactElement } from 'react';
+import { useMemo, useState, type CSSProperties, type FormEvent, type ReactElement } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button, Input } from '@contracthero/ui';
 import { ApiError } from '../../lib/api/client';
 import { useAuth } from '../../lib/auth/auth-context';
 import { POST_AUTH_REDIRECT_PATH, REGISTER_PATH } from '../../lib/auth/constants';
+import { resolveRedirectTarget } from '../../lib/auth/safe-redirect';
 import type { Locale } from '../../i18n/locale-utils';
 
 const HTTP_STATUS_UNAUTHORIZED = 401;
 
 export interface LoginFormProps {
   locale: Locale;
-  /** Optional path to redirect to after a successful login. */
+  /**
+   * Optional path to redirect to after a successful login.
+   *
+   * The value is re-validated by {@link resolveRedirectTarget} before being
+   * passed to the router, so callers cannot accidentally introduce an
+   * open-redirect even if they pass through untrusted input.
+   */
   redirectTo?: string;
 }
 
@@ -56,7 +63,13 @@ export function LoginForm({ locale, redirectTo }: LoginFormProps): ReactElement 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const target = redirectTo ?? `/${locale}${POST_AUTH_REDIRECT_PATH}`;
+  // Defence-in-depth: even though the page component already sanitises the
+  // `?redirect=` query param, re-validate here so the form is safe to use
+  // standalone (e.g. from a different caller).
+  const target = useMemo(
+    () => resolveRedirectTarget(redirectTo, locale, POST_AUTH_REDIRECT_PATH),
+    [redirectTo, locale],
+  );
   const registerHref = `/${locale}${REGISTER_PATH}`;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {

@@ -10,6 +10,7 @@ import {
   PROTECTED_PATH_PREFIXES,
   REFRESH_TOKEN_COOKIE,
 } from './lib/auth/constants';
+import { sanitizeRedirectPath } from './lib/auth/safe-redirect';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -56,16 +57,33 @@ export function middleware(request: NextRequest): NextResponse {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = `/${locale}${LOGIN_PATH}`;
     loginUrl.search = '';
+    // `pathname` and `search` come from the incoming request URL (an origin
+    // we control) so they're already a safe relative path. `searchParams.set`
+    // handles URL-encoding for us.
     const redirectTarget = `${pathname}${search}`;
     loginUrl.searchParams.set('redirect', redirectTarget);
     return NextResponse.redirect(loginUrl);
   }
 
   if (isAuthPage && authenticated) {
-    const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = `/${locale}${POST_AUTH_REDIRECT_PATH}`;
-    homeUrl.search = '';
-    return NextResponse.redirect(homeUrl);
+    // If the user is already authenticated and visits the login/register
+    // page with `?redirect=<path>`, honour the redirect (subject to the
+    // same-origin validation) instead of dropping them on the home page.
+    const candidateRedirect = request.nextUrl.searchParams.get('redirect');
+    const safeRedirect = sanitizeRedirectPath(candidateRedirect);
+
+    const targetUrl = request.nextUrl.clone();
+    if (safeRedirect !== null) {
+      const parsed = new URL(safeRedirect, request.nextUrl.origin);
+      targetUrl.pathname = parsed.pathname;
+      targetUrl.search = parsed.search;
+      targetUrl.hash = parsed.hash;
+    } else {
+      targetUrl.pathname = `/${locale}${POST_AUTH_REDIRECT_PATH}`;
+      targetUrl.search = '';
+      targetUrl.hash = '';
+    }
+    return NextResponse.redirect(targetUrl);
   }
 
   return intlMiddleware(request);

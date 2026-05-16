@@ -41,15 +41,30 @@ function buildApi(overrides: Partial<AuthApi> = {}): AuthApi {
   } as AuthApi;
 }
 
-function renderForm(api: AuthApi, locale: 'en' | 'fa' = 'en'): void {
+function renderForm(api: AuthApi, locale: 'en' | 'fa' = 'en', redirectTo?: string): void {
   const messages = locale === 'fa' ? faMessages : enMessages;
   render(
     <NextIntlClientProvider locale={locale} messages={messages}>
       <AuthProvider authApi={api} skipInitialFetch>
-        <RegisterForm locale={locale} />
+        <RegisterForm locale={locale} redirectTo={redirectTo} />
       </AuthProvider>
     </NextIntlClientProvider>,
   );
+}
+
+async function submitRegisterFormEn(): Promise<void> {
+  fireEvent.change(screen.getByLabelText(enMessages.auth.common.nameLabel), {
+    target: { value: 'Jane' },
+  });
+  fireEvent.change(screen.getByLabelText(enMessages.auth.common.emailLabel), {
+    target: { value: 'a@b.com' },
+  });
+  fireEvent.change(screen.getByLabelText(enMessages.auth.common.passwordLabel), {
+    target: { value: 'StrongPass1' },
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: enMessages.auth.register.submit }));
+  });
 }
 
 describe('RegisterForm', () => {
@@ -83,23 +98,36 @@ describe('RegisterForm', () => {
     expect(pushMock).toHaveBeenCalledWith('/fa/');
   });
 
+  it('safe redirectTo prop ro respect mikone', async () => {
+    pushMock.mockClear();
+    const register = vi.fn().mockResolvedValue(USER);
+    renderForm(buildApi({ register }), 'en', '/en/dashboard');
+
+    await submitRegisterFormEn();
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/en/dashboard');
+    });
+  });
+
+  it('unsafe redirectTo (cross-origin) ro reject mikone va be /<locale>/ fallback mide', async () => {
+    pushMock.mockClear();
+    const register = vi.fn().mockResolvedValue(USER);
+    renderForm(buildApi({ register }), 'en', 'https://evil.example');
+
+    await submitRegisterFormEn();
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/en/');
+    });
+    expect(pushMock).not.toHaveBeenCalledWith(expect.stringContaining('evil.example'));
+  });
+
   it('409 -> emailTaken message', async () => {
     const register = vi.fn().mockRejectedValue(new ApiError(409, 'Conflict', null));
     renderForm(buildApi({ register }));
 
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.nameLabel), {
-      target: { value: 'Jane' },
-    });
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.emailLabel), {
-      target: { value: 'a@b.com' },
-    });
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.passwordLabel), {
-      target: { value: 'StrongPass1' },
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: enMessages.auth.register.submit }));
-    });
+    await submitRegisterFormEn();
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(enMessages.auth.errors.emailTaken);
@@ -110,19 +138,7 @@ describe('RegisterForm', () => {
     const register = vi.fn().mockRejectedValue(new ApiError(400, 'Bad', null));
     renderForm(buildApi({ register }));
 
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.nameLabel), {
-      target: { value: 'Jane' },
-    });
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.emailLabel), {
-      target: { value: 'a@b.com' },
-    });
-    fireEvent.change(screen.getByLabelText(enMessages.auth.common.passwordLabel), {
-      target: { value: 'bad' },
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: enMessages.auth.register.submit }));
-    });
+    await submitRegisterFormEn();
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(enMessages.auth.errors.invalidInput);
