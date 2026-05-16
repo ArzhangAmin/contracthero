@@ -111,7 +111,7 @@ export class DeadlineEngineService {
 
   /**
    * Hame ACTIVE contract haro fetch mikone.
-   * DRAFT, TERMINATED, soft-deleted filter mishe.
+   * EXPIRED, CANCELLED, soft-deleted filter mishe.
    */
   private async fetchActiveContracts(): Promise<Contract[]> {
     return this.prisma.contract.findMany({
