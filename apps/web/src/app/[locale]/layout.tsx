@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { getLocaleDirection, isValidLocale } from '@/i18n/locale-utils';
 import { AuthProvider } from '@/lib/auth/auth-context';
-import '@contracthero/ui/styles';
+import '../globals.css';
 
 export const metadata: Metadata = {
   title: 'ContractHero',
