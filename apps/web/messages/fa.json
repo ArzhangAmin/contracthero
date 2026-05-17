@@ -3,33 +3,63 @@
     "appName": "ContractHero",
     "tagline": "قراردادهاتو مدیریت کن"
   },
-  "auth": {
-    "common": {
-      "emailLabel": "ایمیل",
-      "passwordLabel": "رمز عبور",
-      "nameLabel": "نام و نام خانوادگی",
-      "submitting": "لطفاً صبر کنید…"
+  "contracts": {
+    "title": "قراردادها",
+    "subtitle": "قراردادهات رو مرور، فیلتر و مرتب کن.",
+    "table": {
+      "caption": "فهرست قراردادها"
     },
-    "login": {
-      "title": "خوش آمدید",
-      "subtitle": "برای مدیریت قراردادهات وارد شو.",
-      "submit": "ورود",
-      "noAccount": "حساب کاربری نداری؟",
-      "registerLink": "ثبت‌نام کن"
+    "columns": {
+      "title": "عنوان",
+      "counterparty": "طرف قرارداد",
+      "endDate": "تاریخ پایان",
+      "value": "ارزش",
+      "status": "وضعیت",
+      "deadlineStatus": "مهلت"
     },
-    "register": {
-      "title": "ساخت حساب کاربری",
-      "subtitle": "در چند دقیقه مدیریت قراردادهات رو شروع کن.",
-      "submit": "ساخت حساب",
-      "passwordHint": "حداقل ۸ کاراکتر شامل حرف بزرگ، حرف کوچک و یک عدد.",
-      "haveAccount": "از قبل حساب داری؟",
-      "loginLink": "وارد شو"
+    "status": {
+      "draft": "پیش‌نویس",
+      "active": "فعال",
+      "expired": "منقضی",
+      "cancelled": "لغو شده"
     },
-    "errors": {
-      "invalidCredentials": "ایمیل یا رمز عبور اشتباه است.",
-      "emailTaken": "حسابی با این ایمیل از قبل وجود دارد.",
-      "invalidInput": "لطفاً فرم را بررسی کن و دوباره تلاش کن.",
-      "generic": "خطایی رخ داد. لطفاً دوباره تلاش کن."
+    "deadline": {
+      "expired": "منقضی شده",
+      "due_today": "سررسید امروز",
+      "due_soon": "نزدیک سررسید",
+      "on_track": "در زمان"
+    },
+    "filters": {
+      "ariaLabel": "فیلترهای قرارداد",
+      "search": "جستجو",
+      "searchPlaceholder": "بر اساس عنوان یا طرف قرارداد جستجو کن",
+      "status": "وضعیت",
+      "statusAll": "همه وضعیت‌ها",
+      "endDateFrom": "تاریخ پایان از",
+      "endDateTo": "تاریخ پایان تا",
+      "apply": "اعمال",
+      "reset": "بازنشانی"
+    },
+    "pagination": {
+      "ariaLabel": "صفحه‌بندی",
+      "previous": "قبلی",
+      "next": "بعدی",
+      "summary": "صفحه {page} از {totalPages} — {total} قرارداد"
+    },
+    "empty": {
+      "title": "هنوز قراردادی نیست",
+      "message": "بعد از افزودن قرارداد، اینجا نمایش داده می‌شود.",
+      "filteredTitle": "هیچ قراردادی با فیلترهای شما مطابقت ندارد",
+      "filteredMessage": "بعضی از فیلترها رو پاک کن یا عبارت جستجو رو عوض کن."
+    },
+    "loading": {
+      "label": "در حال بارگذاری قراردادها…"
+    },
+    "error": {
+      "title": "خطایی رخ داد",
+      "message": "نتوانستیم قراردادهای شما را بارگذاری کنیم. لطفاً دوباره تلاش کنید.",
+      "digest": "کد مرجع: {digest}",
+      "retry": "تلاش مجدد"
     }
   }
 }
