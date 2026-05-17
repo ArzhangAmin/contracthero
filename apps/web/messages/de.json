@@ -2,5 +2,64 @@
   "common": {
     "appName": "ContractHero",
     "tagline": "Deine Vertraege im Griff"
+  },
+  "contracts": {
+    "title": "Vertraege",
+    "subtitle": "Durchsuche, filtere und sortiere dein Vertragsportfolio.",
+    "table": {
+      "caption": "Liste der Vertraege"
+    },
+    "columns": {
+      "title": "Titel",
+      "counterparty": "Vertragspartner",
+      "endDate": "Enddatum",
+      "value": "Wert",
+      "status": "Status",
+      "deadlineStatus": "Frist"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "cancelled": "Gekuendigt"
+    },
+    "deadline": {
+      "expired": "Abgelaufen",
+      "due_today": "Heute faellig",
+      "due_soon": "Bald faellig",
+      "on_track": "Im Plan"
+    },
+    "filters": {
+      "ariaLabel": "Vertragsfilter",
+      "search": "Suche",
+      "searchPlaceholder": "Nach Titel oder Vertragspartner suchen",
+      "status": "Status",
+      "statusAll": "Alle Status",
+      "endDateFrom": "Enddatum ab",
+      "endDateTo": "Enddatum bis",
+      "apply": "Anwenden",
+      "reset": "Zuruecksetzen"
+    },
+    "pagination": {
+      "ariaLabel": "Seitennavigation",
+      "previous": "Zurueck",
+      "next": "Weiter",
+      "summary": "Seite {page} von {totalPages} — {total} Vertraege"
+    },
+    "empty": {
+      "title": "Noch keine Vertraege",
+      "message": "Sobald du Vertraege hinzufuegst, erscheinen sie hier.",
+      "filteredTitle": "Keine Vertraege entsprechen deinen Filtern",
+      "filteredMessage": "Loesche einige Filter oder aendere den Suchbegriff."
+    },
+    "loading": {
+      "label": "Vertraege werden geladen…"
+    },
+    "error": {
+      "title": "Etwas ist schiefgelaufen",
+      "message": "Wir konnten deine Vertraege nicht laden. Bitte versuche es erneut.",
+      "digest": "Referenz: {digest}",
+      "retry": "Erneut versuchen"
+    }
   }
 }

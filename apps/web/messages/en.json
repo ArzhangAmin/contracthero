@@ -2,5 +2,64 @@
   "common": {
     "appName": "ContractHero",
     "tagline": "Your contracts under control"
+  },
+  "contracts": {
+    "title": "Contracts",
+    "subtitle": "Browse, filter and sort your contract portfolio.",
+    "table": {
+      "caption": "List of contracts"
+    },
+    "columns": {
+      "title": "Title",
+      "counterparty": "Counterparty",
+      "endDate": "End date",
+      "value": "Value",
+      "status": "Status",
+      "deadlineStatus": "Deadline"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "deadline": {
+      "expired": "Expired",
+      "due_today": "Due today",
+      "due_soon": "Due soon",
+      "on_track": "On track"
+    },
+    "filters": {
+      "ariaLabel": "Contract filters",
+      "search": "Search",
+      "searchPlaceholder": "Search by title or counterparty",
+      "status": "Status",
+      "statusAll": "All statuses",
+      "endDateFrom": "End date from",
+      "endDateTo": "End date to",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "pagination": {
+      "ariaLabel": "Pagination",
+      "previous": "Previous",
+      "next": "Next",
+      "summary": "Page {page} of {totalPages} — {total} contracts"
+    },
+    "empty": {
+      "title": "No contracts yet",
+      "message": "Once you add contracts they will appear here.",
+      "filteredTitle": "No contracts match your filters",
+      "filteredMessage": "Try clearing some filters or changing the search term."
+    },
+    "loading": {
+      "label": "Loading contracts…"
+    },
+    "error": {
+      "title": "Something went wrong",
+      "message": "We could not load your contracts. Please try again.",
+      "digest": "Reference: {digest}",
+      "retry": "Try again"
+    }
   }
 }

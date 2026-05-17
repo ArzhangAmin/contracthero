@@ -2,5 +2,64 @@
   "common": {
     "appName": "ContractHero",
     "tagline": "قراردادهاتو مدیریت کن"
+  },
+  "contracts": {
+    "title": "قراردادها",
+    "subtitle": "قراردادهات رو مرور، فیلتر و مرتب کن.",
+    "table": {
+      "caption": "فهرست قراردادها"
+    },
+    "columns": {
+      "title": "عنوان",
+      "counterparty": "طرف قرارداد",
+      "endDate": "تاریخ پایان",
+      "value": "ارزش",
+      "status": "وضعیت",
+      "deadlineStatus": "مهلت"
+    },
+    "status": {
+      "draft": "پیش‌نویس",
+      "active": "فعال",
+      "expired": "منقضی",
+      "cancelled": "لغو شده"
+    },
+    "deadline": {
+      "expired": "منقضی شده",
+      "due_today": "سررسید امروز",
+      "due_soon": "نزدیک سررسید",
+      "on_track": "در زمان"
+    },
+    "filters": {
+      "ariaLabel": "فیلترهای قرارداد",
+      "search": "جستجو",
+      "searchPlaceholder": "بر اساس عنوان یا طرف قرارداد جستجو کن",
+      "status": "وضعیت",
+      "statusAll": "همه وضعیت‌ها",
+      "endDateFrom": "تاریخ پایان از",
+      "endDateTo": "تاریخ پایان تا",
+      "apply": "اعمال",
+      "reset": "بازنشانی"
+    },
+    "pagination": {
+      "ariaLabel": "صفحه‌بندی",
+      "previous": "قبلی",
+      "next": "بعدی",
+      "summary": "صفحه {page} از {totalPages} — {total} قرارداد"
+    },
+    "empty": {
+      "title": "هنوز قراردادی نیست",
+      "message": "بعد از افزودن قرارداد، اینجا نمایش داده می‌شود.",
+      "filteredTitle": "هیچ قراردادی با فیلترهای شما مطابقت ندارد",
+      "filteredMessage": "بعضی از فیلترها رو پاک کن یا عبارت جستجو رو عوض کن."
+    },
+    "loading": {
+      "label": "در حال بارگذاری قراردادها…"
+    },
+    "error": {
+      "title": "خطایی رخ داد",
+      "message": "نتوانستیم قراردادهای شما را بارگذاری کنیم. لطفاً دوباره تلاش کنید.",
+      "digest": "کد مرجع: {digest}",
+      "retry": "تلاش مجدد"
+    }
   }
 }
