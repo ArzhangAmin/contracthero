@@ -3,33 +3,63 @@
     "appName": "ContractHero",
     "tagline": "Deine Vertraege im Griff"
   },
-  "auth": {
-    "common": {
-      "emailLabel": "E-Mail",
-      "passwordLabel": "Passwort",
-      "nameLabel": "Vollstaendiger Name",
-      "submitting": "Bitte warten…"
+  "contracts": {
+    "title": "Vertraege",
+    "subtitle": "Durchsuche, filtere und sortiere dein Vertragsportfolio.",
+    "table": {
+      "caption": "Liste der Vertraege"
     },
-    "login": {
-      "title": "Willkommen zurueck",
-      "subtitle": "Melde dich an, um deine Vertraege zu verwalten.",
-      "submit": "Anmelden",
-      "noAccount": "Noch kein Konto?",
-      "registerLink": "Jetzt erstellen"
+    "columns": {
+      "title": "Titel",
+      "counterparty": "Vertragspartner",
+      "endDate": "Enddatum",
+      "value": "Wert",
+      "status": "Status",
+      "deadlineStatus": "Frist"
     },
-    "register": {
-      "title": "Konto erstellen",
-      "subtitle": "Beginne in wenigen Minuten mit der Verwaltung deiner Vertraege.",
-      "submit": "Konto erstellen",
-      "passwordHint": "Mindestens 8 Zeichen mit Gross-, Kleinbuchstaben und einer Ziffer.",
-      "haveAccount": "Schon ein Konto?",
-      "loginLink": "Anmelden"
+    "status": {
+      "draft": "Entwurf",
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "cancelled": "Gekuendigt"
     },
-    "errors": {
-      "invalidCredentials": "Ungueltige E-Mail oder Passwort.",
-      "emailTaken": "Ein Konto mit dieser E-Mail existiert bereits.",
-      "invalidInput": "Bitte ueberpruefe das Formular und versuche es erneut.",
-      "generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    "deadline": {
+      "expired": "Abgelaufen",
+      "due_today": "Heute faellig",
+      "due_soon": "Bald faellig",
+      "on_track": "Im Plan"
+    },
+    "filters": {
+      "ariaLabel": "Vertragsfilter",
+      "search": "Suche",
+      "searchPlaceholder": "Nach Titel oder Vertragspartner suchen",
+      "status": "Status",
+      "statusAll": "Alle Status",
+      "endDateFrom": "Enddatum ab",
+      "endDateTo": "Enddatum bis",
+      "apply": "Anwenden",
+      "reset": "Zuruecksetzen"
+    },
+    "pagination": {
+      "ariaLabel": "Seitennavigation",
+      "previous": "Zurueck",
+      "next": "Weiter",
+      "summary": "Seite {page} von {totalPages} — {total} Vertraege"
+    },
+    "empty": {
+      "title": "Noch keine Vertraege",
+      "message": "Sobald du Vertraege hinzufuegst, erscheinen sie hier.",
+      "filteredTitle": "Keine Vertraege entsprechen deinen Filtern",
+      "filteredMessage": "Loesche einige Filter oder aendere den Suchbegriff."
+    },
+    "loading": {
+      "label": "Vertraege werden geladen…"
+    },
+    "error": {
+      "title": "Etwas ist schiefgelaufen",
+      "message": "Wir konnten deine Vertraege nicht laden. Bitte versuche es erneut.",
+      "digest": "Referenz: {digest}",
+      "retry": "Erneut versuchen"
     }
   }
 }
